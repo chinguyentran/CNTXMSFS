@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Admin Panel - CNT Flight</title>
+    <link rel="icon" type="image/svg" sizes="32x32" href="assets/icon máy bay.svg">
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      .admin-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+        height: calc(100vh - 80px);
+      }
+      .panel-column {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        height: 100%;
+      }
+      .scroll-list {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 5px;
+      }
+      .item-card {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .delete-btn {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="logo">ADMIN CENTER</div>
+      <a
+        href="dashboard.html"
+        class="btn-neon"
+        style="background: transparent; border: 1px solid var(--primary)"
+        >EXIT</a
+      >
+    </nav>
+
+    <div class="admin-layout">
+      <div class="panel-column glass" style="padding: 20px">
+        <h3 style="color: var(--primary)">✈️ FLIGHT EVENTS</h3>
+        <form id="addEventForm">
+          <div style="display: flex; gap: 10px">
+            <input
+              type="text"
+              id="dep"
+              placeholder="DEP (VD: VVTS)"
+              style="text-transform: uppercase"
+              required
+            />
+            <input
+              type="text"
+              id="arr"
+              placeholder="ARR (VD: VVNB)"
+              style="text-transform: uppercase"
+              required
+            />
+          </div>
+          <input
+            type="text"
+            id="aircraft"
+            placeholder="Aircraft (VD: A320)"
+            required
+          />
+          <input type="date" id="date" required />
+          <button
+            type="submit"
+            class="btn-neon"
+            style="width: 100%; margin-top: 10px"
+          >
+            PUBLISH FLIGHT
+          </button>
+        </form>
+        <div class="scroll-list" id="eventsContainer"></div>
+      </div>
+
+      <div class="panel-column glass" style="padding: 20px">
+        <h3 style="color: var(--success)">🎖️ RANK SYSTEM</h3>
+        <form id="addRankForm">
+          <input
+            type="text"
+            id="rankTitle"
+            placeholder="Rank Title (e.g. Captain)"
+            required
+          />
+          <input
+            type="number"
+            id="rankPoints"
+            placeholder="Required Points (e.g. 1000)"
+            required
+          />
+          <button
+            type="submit"
+            class="btn-neon"
+            style="
+              width: 100%;
+              margin-top: 10px;
+              background: var(--success);
+              color: black;
+            "
+          >
+            ADD RANK
+          </button>
+        </form>
+        <div class="scroll-list" id="ranksContainer"></div>
+      </div>
+    </div>
+
+    <script type="module" src="js/admin.js"></script>
+  </body>
+</html>

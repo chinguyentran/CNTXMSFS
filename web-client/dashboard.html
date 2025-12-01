@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Cockpit - CNT Flight</title>
+    <link rel="icon" type="image/svg" sizes="32x32" href="assets/icon máy bay.svg">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        .dashboard-grid { display: grid; grid-template-columns: 300px 1fr; height: 100vh; }
+        .sidebar { background: rgba(15, 14, 23, 0.95); border-right: 1px solid var(--glass-border); padding: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 10; }
+        
+        /* Map Container */
+        #map { width: 100%; height: 100%; z-index: 1; background: #0f0e17; }
+        
+        /* Panel & Telemetry */
+        #activeJobPanel { display: none; background: rgba(124, 58, 237, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: 10px; }
+        .telemetry-box { position: absolute; top: 20px; right: 20px; width: 200px; padding: 15px; z-index: 1000; }
+        .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 5px 0; }
+        
+        /* Icon máy bay xoay bằng CSS */
+        .plane-marker { 
+            font-size: 30px; 
+            text-align: center; 
+            display: block;
+            transition: transform 0.2s linear; /* Xoay mượt */
+            filter: drop-shadow(0 0 8px #7c3aed); /* Bóng neon */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-grid">
+        <aside class="sidebar">
+            <h2 class="logo">CNT FLIGHT</h2>
+            <div class="glass" style="padding: 15px;">
+    <h3 id="userEmail" style="font-size: 0.9rem; color: #fff; font-weight: bold; overflow:hidden; text-overflow:ellipsis; margin-bottom: 5px;">Loading...</h3>
+    
+    <div style="font-size: 0.8rem; margin-bottom: 5px;">
+        <span id="userRankDisplay" style="color: #aaa; font-style: italic;">Checking Rank...</span>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 5px;">
+        <span style="color: #aaa; font-size: 0.8rem;">Points:</span>
+        <strong id="userPoints" style="color: var(--gold);">0 PTS</strong>
+    </div>
+</div>
+
+            <div id="activeJobPanel">
+                <p style="color:var(--primary); font-weight:bold; font-size:0.8rem;">CURRENT MISSION</p>
+                <h2 id="jobRoute" style="color:white; margin: 5px 0;">--</h2>
+                <p id="jobAircraft" style="color:#aaa; font-size:0.9rem;">--</p>
+                <p id="jobStatusText" style="color: #ffd700; font-size: 0.8rem; margin-top: 5px;">Ready to fly</p>
+                <button id="btnFinishJob" class="btn-neon" style="width:100%; background:#ef4444; margin-top:10px; font-size:0.8rem; padding:8px;">HỦY CHUYẾN BAY</button>
+            </div>
+
+            <div id="mainMenu" style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="btnOpenJobCenter" class="btn-neon" style="width: 100%;">✈️ NHẬN CHUYẾN BAY</button>
+                <button id="btnOpenLeaderboard" class="btn-neon" style="width: 100%; background: transparent; border: 1px solid white;">🏆 BẢNG XẾP HẠNG</button>
+                <a href="admin.html" id="btnAdmin" class="btn-neon" style="display:none; text-align:center; background:#333; border:1px solid var(--success);">ADMIN PANEL</a>
+            </div>
+
+            <button id="btnLogout" class="btn-neon" style="background: #ef4444; margin-top: auto;">LOGOUT</button>
+        </aside>
+
+        <main style="position: relative;">
+            <div id="map"></div>
+            
+            <div id="telemetryPanel" class="glass telemetry-box" style="display: none;">
+                <h4 style="color: var(--primary); margin-bottom: 10px;">LIVE DATA</h4>
+                <div class="stat-row"><span>STS:</span> <strong id="tStatus">--</strong></div>
+                <div class="stat-row"><span>ALT:</span> <strong id="tAlt">0</strong></div>
+                <div class="stat-row"><span>SPD:</span> <strong id="tSpd">0</strong></div>
+                <div class="stat-row"><span>HDG:</span> <strong id="tHdg">0</strong></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modalJobs" class="modal"> <div class="modal-content glass" style="max-width: 600px;"> <div style="display:flex; justify-content:space-between; margin-bottom:20px;"> <h2 style="color: var(--primary);">FLIGHT CENTER</h2> <button id="closeJobModal" style="background:none; border:none; color:white; font-size:2rem; cursor:pointer;">&times;</button> </div> <div id="jobListContainer">Loading events...</div> </div> </div>
+    <div id="modalRank" class="modal"> <div class="modal-content glass" style="max-width: 600px;"> <div style="display:flex; justify-content:space-between; margin-bottom:20px;"> <h2 style="color: var(--gold);">TOP PILOTS</h2> <button id="closeRankModal" style="background:none; border:none; color:white; font-size:2rem; cursor:pointer;">&times;</button> </div> <table class="table-custom"> <thead><tr><th>#</th><th>Pilot</th><th>Pts</th></tr></thead> <tbody id="leaderboardBody"></tbody> </table> </div> </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.geodesic"></script> 
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

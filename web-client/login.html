@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - CNT Flight</title>
+    <link rel="icon" type="image/svg" sizes="32x32" href="assets/icon máy bay.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="center-screen" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1920') center/cover;">
+        <div class="overlay"></div>
+        
+        <div class="glass fade-in-up" style="position: relative; z-index: 2; padding: 40px; width: 350px; display: flex; flex-direction: column; gap: 20px;">
+            <h2 style="text-align: center; color: var(--primary); text-shadow: 0 0 10px var(--primary);">PILOT LOGIN</h2>
+            
+            <form id="loginForm" style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="pilot@example.com" required 
+                           style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--primary); color: white; border-radius: 5px;">
+                </div>
+                <div>
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="******" required
+                           style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--primary); color: white; border-radius: 5px;">
+                </div>
+                <button type="submit" class="btn-neon" style="width: 100%; margin-top: 10px;">ACCESS SYSTEM</button>
+            </form>
+            <p style="text-align: center; font-size: 0.8rem; color: #aaa;">Chưa có tài khoản? Hệ thống sẽ tự động đăng ký khi bạn đăng nhập lần đầu.</p>
+        </div>
+    </div>
+
+    <script type="module" src="js/auth.js"></script>
+</body>
+</html>
