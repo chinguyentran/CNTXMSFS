@@ -15,16 +15,16 @@ let plannedRouteLayer = null;
 
 // --- CẤU HÌNH RANK ---
 const RANK_SYSTEM = [
-    { pts: 0,      color: "#a0a0a0", title: "Trainee (Học viên)" },
-    { pts: 5000,   color: "#00ff00", title: "Junior First Officer (Cơ phó dự bị)" },
-    { pts: 10000,  color: "#00ccff", title: "First Officer (Cơ phó)" },
-    { pts: 20000,  color: "#bd00ff", title: "Senior First Officer (Cơ phó cấp cao)" },
-    { pts: 40000,  color: "#ff9900", title: "Captain (Cơ trưởng)" },
-    { pts: 60000,  color: "#ff0000", title: "Senior Captain (Cơ trưởng cấp cao)" },
-    { pts: 80000,  color: "#ff0066", title: "Commander (Chỉ huy trưởng)" },
-    { pts: 100000, color: "#ffd700", title: "Legendary Pilot (Phi công huyền thoại)" },
-    { pts: 150000, color: "#00ffff", title: "Sky Marshal (Thống Lĩnh Bầu Trời)" },
-    { pts: 200000, color: "#ffffff", title: "The GOAT (Huyền Thoại Sống)" }
+    { pts: 0,      color: "#ffffff", title: "Trainee (Học viên)" },           // Trắng tinh
+    { pts: 5000,   color: "#dcdcdc", title: "Junior First Officer (Cơ phó dự bị)" }, // Xám trắng
+    { pts: 10000,  color: "#00ffff", title: "First Officer (Cơ phó)" },       // Cyan (Xanh lơ sáng)
+    { pts: 20000,  color: "#00ff00", title: "Senior First Officer (Cơ phó cấp cao)" }, // Xanh lá Neon
+    { pts: 40000,  color: "#ffff00", title: "Captain (Cơ trưởng)" },          // Vàng Chanh
+    { pts: 60000,  color: "#ffa500", title: "Senior Captain (Cơ trưởng cấp cao)" }, // Cam
+    { pts: 80000,  color: "#993399", title: "Commander (Chỉ huy trưởng)" },   // Hồng Tím (Magenta)
+    { pts: 100000, color: "#ff00ff", title: "Legendary Pilot (Phi công huyền thoại)" }, // Hồng Đậm (Hot Pink)
+    { pts: 150000, color: "#ff4500", title: "Sky Marshal (Thống Lĩnh Bầu Trời)" }, // Đỏ Cam
+    { pts: 200000, color: "#ff0000", title: "The GOAT (Huyền Thoại Sống)" }   // ĐỎ TƯƠI (Cao nhất)
 ];
 
 function getRankInfo(points) {
@@ -261,3 +261,4 @@ document.getElementById('btnOpenLeaderboard').onclick = async () => {
 document.getElementById('closeJobModal').onclick = () => modalJobs.style.display = 'none';
 document.getElementById('closeRankModal').onclick = () => modalRank.style.display = 'none';
 document.getElementById('btnLogout').onclick = () => { if(confirm("Đăng xuất?")) signOut(auth).then(() => window.location.href="index.html"); };
+
