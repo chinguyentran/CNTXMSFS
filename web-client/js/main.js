@@ -1,7 +1,7 @@
-// js/main.js - FULL RANK DISPLAY VERSION
+// js/main.js - FINAL VERSION WITH FULL LEADERBOARD LOGIC
 import { auth, db, rtdb } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { doc, updateDoc, collection, query, orderBy, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { doc, updateDoc, collection, query, orderBy, getDocs, onSnapshot, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { initMap, updateAircraft2D, drawRouteLine2D } from './map.js';
 import { airports } from './airports.js';
@@ -9,13 +9,11 @@ import { airports } from './airports.js';
 const map = initMap();
 let myUid = null;
 let myJob = null;
-let myCurrentRankInfo = null; // Lưu thông tin rank của mình
+let myCurrentRankInfo = null;
 const activeFlights = {}; 
 let plannedRouteLayer = null;
 
-// --- CẤU HÌNH RANK & MÀU SẮC ---
-// Bạn có thể fetch cái này từ Firestore 'ranks' collection nếu muốn động
-// Nhưng hardcode ở đây cho nhanh và mượt Map
+// --- CẤU HÌNH RANK ---
 const RANK_SYSTEM = [
     { pts: 0,      color: "#a0a0a0", title: "Trainee (Học viên)" },
     { pts: 5000,   color: "#00ff00", title: "Junior First Officer (Cơ phó dự bị)" },
@@ -26,29 +24,17 @@ const RANK_SYSTEM = [
     { pts: 80000,  color: "#ff0066", title: "Commander (Chỉ huy trưởng)" },
     { pts: 100000, color: "#ffd700", title: "Legendary Pilot (Phi công huyền thoại)" },
     { pts: 150000, color: "#00ffff", title: "Sky Marshal (Thống Lĩnh Bầu Trời)" },
-    { pts: 200000, color: "#ffffff", title: "The GOAT (Huyền Thoại Sống)" } // Màu trắng sáng
+    { pts: 200000, color: "#ffffff", title: "The GOAT (Huyền Thoại Sống)" }
 ];
 
-// Hàm tính toán Rank từ điểm số
 function getRankInfo(points) {
     let current = RANK_SYSTEM[0];
     for (let i = 0; i < RANK_SYSTEM.length; i++) {
-        if (points >= RANK_SYSTEM[i].pts) {
-            current = RANK_SYSTEM[i];
-        } else {
-            break; 
-        }
+        if (points >= RANK_SYSTEM[i].pts) current = RANK_SYSTEM[i];
+        else break;
     }
-    
-    // Tách tiếng Anh (Lấy phần trước dấu mở ngoặc)
-    // Ví dụ: "Trainee (Học viên)" -> "Trainee"
     let engTitle = current.title.split(' (')[0].trim();
-    
-    return {
-        fullTitle: current.title, // Dùng cho Sidebar
-        engTitle: engTitle,       // Dùng cho Map
-        color: current.color      // Dùng cho cả 2
-    };
+    return { fullTitle: current.title, engTitle: engTitle, color: current.color };
 }
 
 // --- 1. AUTH & USER ---
@@ -59,21 +45,19 @@ onAuthStateChanged(auth, (user) => {
     onSnapshot(doc(db, "users", myUid), (docSnap) => {
         if (docSnap.exists()) {
             const d = docSnap.data();
-            
-            // 1. Tính toán Rank
             const pts = d.points || 0;
             myCurrentRankInfo = getRankInfo(pts);
 
-            // 2. Cập nhật Sidebar
             document.getElementById('userEmail').innerText = d.email;
             document.getElementById('userPoints').innerText = Math.round(pts) + " PTS";
             
-            // Hiển thị Rank ở Sidebar (Full Title + Màu)
             const rankEl = document.getElementById('userRankDisplay');
-            rankEl.innerText = myCurrentRankInfo.fullTitle;
-            rankEl.style.color = myCurrentRankInfo.color;
-            rankEl.style.fontWeight = "bold";
-            rankEl.style.textShadow = `0 0 5px ${myCurrentRankInfo.color}`; // Hiệu ứng phát sáng nhẹ
+            if(rankEl) {
+                rankEl.innerText = myCurrentRankInfo.fullTitle;
+                rankEl.style.color = myCurrentRankInfo.color;
+                rankEl.style.fontWeight = "bold";
+                rankEl.style.textShadow = `0 0 5px ${myCurrentRankInfo.color}`;
+            }
 
             if(d.role === 'admin') document.getElementById('btnAdmin').style.display = 'block';
             
@@ -86,21 +70,11 @@ onAuthStateChanged(auth, (user) => {
             }
         }
     });
-
     listenToSky();
 });
 
 // --- 2. MAP LOGIC ---
 function listenToSky() {
-    // Chúng ta cần lấy cả list User để biết Rank của người khác
-    // Cách tối ưu: Khi vẽ máy bay người khác, fetch user đó 1 lần rồi cache lại.
-    // Cách đơn giản (hiện tại): Tạm thời hiển thị Rank của mình đúng, người khác hiển thị mặc định hoặc cần fetch thêm.
-    // Để code không quá phức tạp, ở đây tôi sẽ demo hiển thị Rank của MÌNH.
-    // Nếu muốn hiện Rank người khác, ta cần lưu điểm số vào node 'live_flights' luôn.
-    
-    // --> GIẢI PHÁP TỐT NHẤT: Sửa agent.js để gửi kèm rank/points lên realtime db.
-    // NHƯNG ĐỂ KHÔNG SỬA AGENT: Ta sẽ fetch user data khi vẽ.
-    
     onValue(ref(rtdb, 'live_flights'), async (snap) => {
         const allData = snap.val() || {};
         const currentUids = new Set(Object.keys(allData));
@@ -108,20 +82,10 @@ function listenToSky() {
         for (const uid of currentUids) {
             if (uid === myUid && !myJob) continue;
 
-            // Xác định Rank Info cho máy bay này
             let rInfo = { title: "Pilot", color: "#fff", engTitle: "PILOT" };
-            
-            if (uid === myUid && myCurrentRankInfo) {
-                rInfo = myCurrentRankInfo;
-            } else {
-                // Nếu là người khác, ta cần biết điểm họ để tính rank.
-                // Để nhanh, ta tạm thời hiển thị màu trắng.
-                // Muốn xịn: Sửa Agent gửi kèm "current_points" lên realtime DB.
-                // Ở đây tôi giả định là "Unknown" nếu chưa fetch được.
-                rInfo = { fullTitle: "Traffic", color: "#aaaaaa", engTitle: "TRAFFIC" };
-            }
+            if (uid === myUid && myCurrentRankInfo) rInfo = myCurrentRankInfo;
+            else rInfo = { fullTitle: "Traffic", color: "#aaaaaa", engTitle: "TRAFFIC" };
 
-            // Gọi hàm vẽ (truyền thêm rInfo)
             updateAircraft2D(map, uid, allData[uid], activeFlights, (uid === myUid), rInfo);
 
             if (uid === myUid && myJob) {
@@ -130,7 +94,6 @@ function listenToSky() {
             }
         }
 
-        // Cleanup
         Object.keys(activeFlights).forEach(uid => {
             if (!currentUids.has(uid) || (uid === myUid && !myJob)) {
                 if (activeFlights[uid]) {
@@ -143,7 +106,6 @@ function listenToSky() {
     });
 }
 
-// ... (Các hàm updateTelemetry, checkFinishCondition, setJobState, finishJobProcess giữ nguyên như V3.1) ...
 function updateTelemetry(d) {
     document.getElementById('tStatus').innerText = d.status;
     document.getElementById('tAlt').innerText = d.telemetry.alt;
@@ -157,7 +119,7 @@ function checkFinishCondition(d) {
     const dist = d.distance_remain || 9999;
     statusText.innerText = `Dest: ${dist} km`;
 
-    if (dist < 10 && d.telemetry.speed < 15) { // Nới lỏng điều kiện chút cho dễ đậu
+    if (dist < 10 && d.telemetry.speed < 15) {
         document.getElementById('btnFinishJob').onclick = async () => {
              alert("CHÚC MỪNG! Chuyến bay hoàn tất.");
              await finishJobProcess();
@@ -209,10 +171,11 @@ function setJobState(hasJob, jobData) {
     }
 }
 
-// ... (Phần Modal & Event Listener giữ nguyên như cũ) ...
+// --- PHẦN MODAL & EVENT LISTENER (FULL) ---
 const modalJobs = document.getElementById('modalJobs');
 const modalRank = document.getElementById('modalRank');
 
+// Nút mở Job Center
 document.getElementById('btnOpenJobCenter').onclick = async () => {
     modalJobs.style.display = 'block';
     const container = document.getElementById('jobListContainer');
@@ -242,11 +205,59 @@ document.getElementById('btnOpenJobCenter').onclick = async () => {
     });
 };
 
-document.getElementById('closeJobModal').onclick = () => modalJobs.style.display = 'none';
-document.getElementById('closeRankModal').onclick = () => modalRank.style.display = 'none';
+// Nút mở Leaderboard (ĐÃ BỔ SUNG ĐẦY ĐỦ)
 document.getElementById('btnOpenLeaderboard').onclick = async () => {
     modalRank.style.display = 'block';
     const tbody = document.getElementById('leaderboardBody');
-    // ... logic leaderboard cũ ...
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px;">Loading data...</td></tr>';
+    
+    try {
+        const q = query(collection(db, "users"), orderBy("points", "desc"), limit(20));
+        const snapshot = await getDocs(q);
+        
+        tbody.innerHTML = '';
+        if (snapshot.empty) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No data found.</td></tr>';
+            return;
+        }
+
+        let idx = 1;
+        snapshot.forEach(docSnap => {
+            const u = docSnap.data();
+            const pts = u.points || 0;
+            const rankInfo = getRankInfo(pts);
+            
+            let displayName = u.email.split('@')[0];
+            let rowStyle = "border-bottom:1px solid rgba(255,255,255,0.05);";
+            if (docSnap.id === myUid) {
+                displayName += " (YOU)";
+                rowStyle += " background: rgba(124, 58, 237, 0.2);";
+            }
+
+            let idxDisplay = `#${idx}`;
+            if (idx === 1) idxDisplay = "🥇";
+            if (idx === 2) idxDisplay = "🥈";
+            if (idx === 3) idxDisplay = "🥉";
+
+            const row = `
+                <tr style="${rowStyle}">
+                    <td style="padding:10px; text-align:center; color:#fff;">${idxDisplay}</td>
+                    <td style="padding:10px;">
+                        <div style="font-weight:bold; color:#fff;">${displayName}</div>
+                        <div style="font-size:0.7rem; color:${rankInfo.color}; font-weight:800; text-transform:uppercase;">${rankInfo.engTitle}</div>
+                    </td>
+                    <td style="padding:10px; text-align:right; font-weight:bold; color:var(--gold);">${Math.round(pts)}</td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+            idx++;
+        });
+    } catch (error) {
+        console.error("Leaderboard Error:", error);
+        tbody.innerHTML = `<tr><td colspan="3" style="color:orange; text-align:center;">Lỗi Index! Mở Console (F12) để lấy link sửa.</td></tr>`;
+    }
 };
+
+document.getElementById('closeJobModal').onclick = () => modalJobs.style.display = 'none';
+document.getElementById('closeRankModal').onclick = () => modalRank.style.display = 'none';
 document.getElementById('btnLogout').onclick = () => { if(confirm("Đăng xuất?")) signOut(auth).then(() => window.location.href="index.html"); };
